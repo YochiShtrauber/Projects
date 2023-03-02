@@ -1,0 +1,12 @@
+[submodule "Program_Project"]
+	path = Program_Project
+	url = https://github.com/YochiShtrauber/Program_Project.git
+[submodule "Data_Base_Project"]
+	path = Data_Base_Project
+	url = https://github.com/YochiShtrauber/Data_Base_Project.git
+[submodule "Language_Project"]
+	path = Language_Project
+	url = https://github.com/YochiShtrauber/Language_Project.git
+[submodule "Cloud_Computer_Project"]
+	path = Cloud_Computer_Project
+	url = https://github.com/YochiShtrauber/Cloud_Computer_Project.git
