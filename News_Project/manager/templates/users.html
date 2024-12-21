@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Details</title>
+
+    <style>
+        body {
+            background-color: #f4f7fa;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h3 {
+            text-align: center;
+            color: #333;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .input-group input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        .button-container {
+            text-align: center;
+        }
+
+        .save-btn, .delete-btn {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .save-btn:hover, .delete-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h3>User Details</h3>
+
+        <!-- User Information Form -->
+        <form id="userForm">
+            <div class="input-group">
+                <label for="userId">User Name</label>
+                <input type="text" id="userId" readonly>
+            </div>
+
+            <div class="input-group">
+                <label for="userEmail">Email Address</label>
+                <input type="email" id="userEmail" required>
+            </div>
+
+            <div class="input-group">
+                <label for="userPreferences">Preferences (comma separated)</label>
+                <input type="text" id="userPreferences" required>
+            </div>
+
+            <div class="button-container">
+                <button type="button" class="save-btn" id="saveButton">Save</button>
+                <button type="button" class="delete-btn" id="deleteButton">Delete Account</button>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+        </form>
+    </div>
+
+    <script>
+        // Fetch user details and update the form fields
+        async function fetchUserDetails() {
+            const username = localStorage.getItem('username');
+            const password = localStorage.getItem('password');
+
+            const response = await fetch(`/api/users?username=${username}&password=${password}`);
+            const responseData = await response.json();
+
+            if (responseData.message) {
+                const user = responseData.data;
+
+                // Populate the form with user data
+                document.getElementById('userId').value = user.username;  // Read-only field for user ID
+                document.getElementById('userEmail').value = user.email;
+                document.getElementById('userPreferences').value = user.preferences.join(', ');
+            } else {
+                showErrorMessage("Error: User not found or invalid credentials.");
+            }
+        }
+
+        // Show error message
+        function showErrorMessage(message) {
+            const errorMessageDiv = document.getElementById('errorMessage');
+            errorMessageDiv.innerHTML = message;
+        }
+
+        // Handle the Save button click event to send PUT request
+        async function saveUserDetails() {
+            const userId = document.getElementById('userId').value;
+            const email = document.getElementById('userEmail').value;
+            const preferences = document.getElementById('userPreferences').value.split(',').map(pref => pref.trim());
+
+            // Get the password from localStorage (not shown in the form)
+            const password = localStorage.getItem('password');
+
+            const updatedUser = {
+                username: userId,
+                email: email,
+                preferences: preferences,
+                password: password
+            };
+
+            const username = localStorage.getItem('username');
+
+            const response = await fetch(`/api/users?username=${username}&password=${password}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedUser)
+            });
+
+            if (response.ok) {
+                const updatedData = await response.json();
+                alert("User details updated successfully!");
+            } else {
+                const errorData = await response.json();
+                showErrorMessage(`Failed to update user details: ${errorData.detail}`);
+            }
+        }
+
+        // Handle the Delete button click event to send DELETE request
+        async function deleteUserAccount() {
+            const username = localStorage.getItem('username');
+            const password = localStorage.getItem('password');
+
+            const confirmation = confirm("Are you sure you want to delete your account? This action cannot be undone.");
+
+            if (confirmation) {
+                const response = await fetch(`/api/users?username=${username}&password=${password}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    alert("Your account has been deleted successfully.");
+                    // Redirect the user to the login page or home page
+                    window.location.href = '/';  // Adjust the redirect based on your application's flow
+                } else {
+                    const errorData = await response.json();
+                    showErrorMessage(`Failed to delete account: ${errorData.detail}`);
+                }
+            }
+        }
+
+        // On page load, fetch user details
+        fetchUserDetails();
+
+        // Add event listener to save button
+        document.getElementById('saveButton').addEventListener('click', saveUserDetails);
+
+        // Add event listener to delete button
+        document.getElementById('deleteButton').addEventListener('click', deleteUserAccount);
+    </script>
+
+</body>
+</html>

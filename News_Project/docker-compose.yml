@@ -1,0 +1,111 @@
+version: '3.3'
+
+services:
+  manager:
+    build:
+      context: ./manager  # Path to Service A Dockerfile
+    container_name: manager
+    ports:
+      - "5000:5000"  # Expose port 5000 for Service A
+    depends_on:
+      - user_accessor  # Service A depends on Service B (ensures Service B starts first)
+      - postgresdb  # Service A also depends on the PostgreSQL service
+      - mail_accessor
+      - news_accessor
+      - kafka
+      - zookeeper
+#      - rabbitmq
+    environment:
+      - DATABASE_URL=postgresdb://user:password@postgres:5432/mydb  # Database connection string for Service A
+
+
+    volumes:
+      - ./manager:/app  # Mount local manager directory to /app in the container
+
+
+  user_accessor:
+    build:
+      context: ./accessor/user_accessor  # Path to Service B Dockerfile
+    container_name: user_accessor
+    ports:
+      - "5001:5001"  # Expose port 5001 for Service B
+    expose:
+      - "5001"  # Expose the gRPC port internally (Service A communicates with this port)
+#    depends_on:
+#      - rabbitmq
+    environment:
+      - SERVICE_PORT=5001  # Example of an environment variable if needed (optional)
+
+    volumes:
+      - ./accessor/user_accessor:/app  # Mount local code directory
+
+  mail_accessor:
+    build:
+      context: ./accessor/mail_accessor # Path to Service B Dockerfile
+    container_name: mail_accessor
+    ports:
+      - "8003:8003"  # Expose port 5001 for Service B
+    expose:
+      - "8003"  # Expose the gRPC port internally (Service A communicates with this port)
+    environment:
+      - SERVICE_PORT=8003
+    volumes:
+      - ./accessor/mail_accessor:/app  # Mount local code directory
+
+  news_accessor:
+    build:
+      context: ./accessor/news_accessor # Path to Service B Dockerfile
+    container_name: news_accessor
+    depends_on:
+      - kafka
+      - zookeeper
+    ports:
+      - "8000:8000"  # Expose port 8000
+    expose:
+      - "8000"  # Expose the gRPC port internally
+    environment:
+      - SERVICE_PORT=8000
+
+    volumes:
+      - ./accessor/news_accessor:/app  # Mount local code directory
+
+
+  postgresdb:
+    image: postgres:13  # Use official PostgreSQL image (you can change version if needed)
+    container_name: postgresdb
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persist data between container restarts
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 2181:2181
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CREATE_TOPICS: "news_topic:1:1,news_response_topic:1:1"  # Automatically create the topic
+
+
+volumes:
+  postgres_data:
+    driver: local

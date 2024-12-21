@@ -1,0 +1,15 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: rabbitmq
+spec:
+  type: pubsub.rabbitmq
+  version: v1
+  metadata:
+    - name: host
+      value: "rabbitmq:5672"  # RabbitMQ service from Docker Compose
+    - name: username
+      value: "user"
+    - name: password
+      value: "password"
+  scope: app

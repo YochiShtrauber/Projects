@@ -1,0 +1,38 @@
+version: '3.3'
+
+services:
+  postgresdb:
+    image: postgres:13  # Use official PostgreSQL image (you can change version if needed)
+    container_name: postgresdb
+    environment:
+      - POSTGRES_USER=postgres  # Username for the database
+      - POSTGRES_PASSWORD=postgres  # Password for the database
+      - POSTGRES_DB=postgres  # Name of the database
+    ports:
+      - "5432:5432"  # Expose the PostgreSQL port (optional, for external access)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persist data between container restarts
+
+
+#  rabbitmq:
+#    image: "rabbitmq:management"
+#    ports:
+#      - "15672:15672"  # Management UI
+#      - "5672:5672"    # AMQP protocol
+#    environment:
+#      - RABBITMQ_DEFAULT_USER=user
+#      - RABBITMQ_DEFAULT_PASS=password
+
+#  dapr-sidecar:
+#    image: daprio/dapr
+#    container_name: dapr-sidecar
+#    ports:
+#      - "3500:3500" # Dapr HTTP port for health checks
+#    environment:
+#      - DAPR_HTTP_PORT=3500
+#    command: ["dapr", "run", "--app-id", "my-app", "--app-port", "5001"]
+
+volumes:
+  postgres_data:
+    driver: local  # Ensure the data is persisted even if the container is removed
+
